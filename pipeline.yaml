@@ -1,0 +1,3 @@
+gcloud auth list
+gcloud container clusters list
+kubectl get nodes
