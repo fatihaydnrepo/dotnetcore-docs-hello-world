@@ -1,3 +1,14 @@
-gcloud auth list
-gcloud container clusters list
-kubectl get nodes
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    gcloud auth list
+    gcloud container clusters list
+    kubectl get nodes
+  displayName: 'Check GCP Auth and Cluster'
