@@ -1,66 +1,68 @@
 trigger:
-  branches:
-    include:
-      - main  
+- main
 
 pool:
-  name: 'my-pc'
+  vmImage: 'ubuntu-latest'
 
 variables:
-  BuildConfiguration: 'Release'
-  ProjectName: 'HelloWorld'
-  PublishDirectory: '$(Build.ArtifactStagingDirectory)/publish'
-  IISSiteName: 'MyWebApp'
+  buildConfiguration: 'Release'
+  webAppName: 'fati'
 
 stages:
 - stage: Build
-  displayName: 'Build Stage'
+  displayName: 'Build ve Test'
   jobs:
-  - job: Build
-    displayName: 'Build .NET Core Application'
+  - job: BuildAndTest
     steps:
     - task: UseDotNet@2
-      displayName: 'Install .NET SDK'
+      displayName: 'Use .NET Core SDK'
       inputs:
         packageType: 'sdk'
-        version: '8.x'  
-    - script: |
-        dotnet restore
-        dotnet build --configuration $(BuildConfiguration)
-      displayName: 'Restore and Build the Application'
-- stage: Publish
-  displayName: 'Publish Stage'
-  dependsOn: Build
-  jobs:
-  - job: Publish
-    displayName: 'Publish .NET Core Application'
-    steps:
-    - task: UseDotNet@2
-      displayName: 'Install .NET SDK'
+        version: '6.0.x'
+        
+    - script: dotnet restore
+      displayName: 'Restore Packages'
+      
+    - script: dotnet build --configuration $(buildConfiguration)
+      displayName: 'Build Application'
+      
+    - script: dotnet test --configuration $(buildConfiguration) --no-build
+      displayName: 'Run Tests'
+      continueOnError: true
+      
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Application'
       inputs:
-        packageType: 'sdk'
-        version: '8.x' 
-
-    - script: |
-        dotnet publish $(ProjectName).csproj --configuration $(BuildConfiguration) --output $(PublishDirectory)
-      displayName: 'Publish the Application'
+        command: 'publish'
+        publishWebProjects: true
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
 
 - stage: Deploy
-  displayName: 'Deploy Stage'
-  dependsOn: Publish
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  condition: succeeded()
   jobs:
   - job: Deploy
-    displayName: 'Deploy to IIS'
     steps:
-    - script: |
-        echo "Deploying to IIS..."
-        Remove-WebSite -Name $(IISSiteName) -ErrorAction SilentlyContinue
-        New-Item -Path "C:\inetpub\wwwroot\$(IISSiteName)" -ItemType Directory -Force
-        Copy-Item -Recurse -Path $(PublishDirectory)\* -Destination "C:\inetpub\wwwroot\$(IISSiteName)\"
-        New-WebSite -Name $(IISSiteName) -Port 80 -PhysicalPath "C:\inetpub\wwwroot\$(IISSiteName)" -ApplicationPool "DefaultAppPool"
-      displayName: 'Deploy to IIS'
-      condition: succeeded()
-      env:
-        # Gerekli IIS yönetimi izinlerini sağlamak için çevresel değişkenleri ekleyebilirsiniz
-        SYSTEM_ACL: $(Build.ArtifactStagingDirectory)/publish
-
+    - task: DownloadBuildArtifacts@1
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'drop'
+        downloadPath: '$(System.ArtifactsDirectory)'
+        
+    - task: AzureWebApp@1
+      displayName: 'Deploy Azure Web App'
+      inputs:
+        azureSubscription: 'fati'
+        appType: 'webApp'
+        appName: '$(webAppName)'
+        package: '$(System.ArtifactsDirectory)/drop/*.zip'
+        deploymentMethod: 'auto'
