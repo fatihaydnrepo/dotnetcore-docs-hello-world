@@ -6,7 +6,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  webAppName: 'fati'
+  webAppName: 'fati-ghf8ebchbrgjf6fu'  # Gerçek Azure Web App adınız
 
 stages:
 - stage: Build
@@ -62,7 +62,8 @@ stages:
       displayName: 'Deploy Azure Web App'
       inputs:
         azureSubscription: 'fati'
-        appType: 'webApp'
+        appType: 'webAppLinux'  # Linux Web App için doğru değer
         appName: '$(webAppName)'
         package: '$(System.ArtifactsDirectory)/drop/*.zip'
         deploymentMethod: 'auto'
+        runtimeStack: 'DOTNETCORE|8.0'  # .NET Core sürümünü belirtme
