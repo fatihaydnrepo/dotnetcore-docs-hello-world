@@ -6,7 +6,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  webAppName: 'fati-ghf8ebchbrgjf6fu' 
+  webAppName: 'fati' 
 
 stages:
 - stage: Build
