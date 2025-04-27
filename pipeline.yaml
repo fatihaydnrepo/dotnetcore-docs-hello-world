@@ -6,7 +6,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  webAppName: 'fati-ghf8ebchbrgjf6fu'  # Gerçek Azure Web App adınız
+  webAppName: 'fati-ghf8ebchbrgjf6fu' 
 
 stages:
 - stage: Build
@@ -34,8 +34,9 @@ stages:
       displayName: 'Publish Application'
       inputs:
         command: 'publish'
-        publishWebProjects: true
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        projects: '**/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/publish'
+
         
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts'
@@ -62,8 +63,8 @@ stages:
       displayName: 'Deploy Azure Web App'
       inputs:
         azureSubscription: 'fati'
-        appType: 'webAppLinux'  # Linux Web App için doğru değer
+        appType: 'webAppLinux'  
         appName: '$(webAppName)'
-        package: '$(System.ArtifactsDirectory)/drop/*.zip'
+        package: '$(System.ArtifactsDirectory)/drop/publish'
         deploymentMethod: 'auto'
-        runtimeStack: 'DOTNETCORE|8.0'  # .NET Core sürümünü belirtme
+        runtimeStack: 'DOTNETCORE|8.0'  # 
